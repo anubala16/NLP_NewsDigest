@@ -7,7 +7,6 @@ from rouge import Rouge
 import glob
 import os
 
-
 sents_path = 'data/sents/'
 summs_path = 'data/summs/'
 

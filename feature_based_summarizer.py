@@ -11,11 +11,12 @@ import re
 
 def printList(list):
     for i in range(len(list)):
-        print(i, ".", list[i])
+        print((i+1), ".", list[i])
 
 def printSentences(sents):
     for i in range(len(sents)):
-        print("Sent Num:", sents[i][1][1], "Score:", sents[i][1][0], sents[i][0])
+        #print("Sent Num:", sents[i][1][1], "Score:", sents[i][1][0], sents[i][0])
+        print(sents[i][0])
 
 def hasNumbers(inputString):
     return bool(re.search(r'\d', inputString))
@@ -31,7 +32,6 @@ for filename in sorted(glob.glob(os.path.join(sent_path, '*.sent'))):
     text=file.read()
     corpus.append(text)
     file.close()
-print("Read", len(corpus), "articles.")
 
 print("Reading summaries...")
 given_summary=[]
@@ -40,19 +40,17 @@ for filename in sorted(glob.glob(os.path.join(summ_path, '*.summ'))):
     text=file.read()
     given_summary.append(text)
     file.close()
-print("Read", len(given_summary), "summaries.")
 
+print("Fitting TF-IDF model\n")
 vectorizer = TfidfVectorizer(stop_words='english')
 # tokenize and build vocab
+vectorizer.fit(corpus)
+# transform document into vector
+vector = vectorizer.transform(corpus).toarray()
 
 stop_words=set(stopwords.words('english'))
 
 for art_idx in range(len(corpus)):
-    print("Computing TFIDF scores for sentences in article", art_idx, "(ignoring stopwords)...")
-    vectorizer.fit([corpus[art_idx]])
-    # transform document into vector
-    vector = vectorizer.transform([corpus[art_idx]]).toarray()
-    print("Fit TFIDF model:", vector.shape)
     sentScore = dict()
     sent_num = 0
     for sent in sent_tokenize(corpus[art_idx]):
@@ -66,14 +64,17 @@ for art_idx in range(len(corpus)):
                      else:
                          sentScore[sent]=[w_score, sent_num]
         sent_num += 1
+
+    # sort sentences by TF-IDF scores
     sorted_sents = sorted(sentScore.items(), key=lambda w: (w[1][0]), reverse=True)  # sort by TF-IDF scores
 
-    print("TF-IDF sentences:")
-    printSentences(sorted_sents)
-    sorted_sents = sorted_sents[:3]
+    # using the top 4 sentences for summary
+    sorted_sents = sorted_sents[:4]
+
+    # sort sentences by their order in the original article
     sorted_sents = sorted(sorted_sents, key=lambda x: x[1][1])
-    print("\n\nFinal Summary:\n")
-    printList(sorted_sents)
+    print("Final Summary for article:", (art_idx+1), "\n")
+    printSentences(sorted_sents)
     print('-----------------------\n')
 
 '''
